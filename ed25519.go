@@ -10,8 +10,8 @@ package ed25519
 // from SUPERCOP.
 
 import (
-	"crypto/sha512"
 	"crypto/subtle"
+	"hash"
 	"io"
 
 	"github.com/agl/ed25519/edwards25519"
@@ -24,7 +24,7 @@ const (
 )
 
 // GenerateKey generates a public/private key pair using randomness from rand.
-func GenerateKey(rand io.Reader) (publicKey *[PublicKeySize]byte, privateKey *[PrivateKeySize]byte, err error) {
+func GenerateKey(rand io.Reader, h hash.Hash) (publicKey *[PublicKeySize]byte, privateKey *[PrivateKeySize]byte, err error) {
 	privateKey = new([64]byte)
 	publicKey = new([32]byte)
 	_, err = io.ReadFull(rand, privateKey[:32])
@@ -32,7 +32,7 @@ func GenerateKey(rand io.Reader) (publicKey *[PublicKeySize]byte, privateKey *[P
 		return nil, nil, err
 	}
 
-	h := sha512.New()
+	h.Reset()
 	h.Write(privateKey[:32])
 	digest := h.Sum(nil)
 
@@ -51,8 +51,8 @@ func GenerateKey(rand io.Reader) (publicKey *[PublicKeySize]byte, privateKey *[P
 }
 
 // Sign signs the message with privateKey and returns a signature.
-func Sign(privateKey *[PrivateKeySize]byte, message []byte) *[SignatureSize]byte {
-	h := sha512.New()
+func Sign(privateKey *[PrivateKeySize]byte, message []byte, h hash.Hash) *[SignatureSize]byte {
+	h.Reset()
 	h.Write(privateKey[:32])
 
 	var digest1, messageDigest, hramDigest [64]byte
@@ -94,7 +94,7 @@ func Sign(privateKey *[PrivateKeySize]byte, message []byte) *[SignatureSize]byte
 }
 
 // Verify returns true iff sig is a valid signature of message by publicKey.
-func Verify(publicKey *[PublicKeySize]byte, message []byte, sig *[SignatureSize]byte) bool {
+func Verify(publicKey *[PublicKeySize]byte, message []byte, sig *[SignatureSize]byte, h hash.Hash) bool {
 	if sig[63]&224 != 0 {
 		return false
 	}
@@ -106,7 +106,7 @@ func Verify(publicKey *[PublicKeySize]byte, message []byte, sig *[SignatureSize]
 	edwards25519.FeNeg(&A.X, &A.X)
 	edwards25519.FeNeg(&A.T, &A.T)
 
-	h := sha512.New()
+	h.Reset()
 	h.Write(sig[:32])
 	h.Write(publicKey[:])
 	h.Write(message)
