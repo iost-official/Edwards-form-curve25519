@@ -23,6 +23,30 @@ const (
 	SignatureSize  = 64
 )
 
+func GenerateKeyFromSeed(seed string) (publicKey *[PublicKeySize]byte, privateKey *[PrivateKeySize]byte, err error) {
+	privateKey = new([64]byte)
+	publicKey = new([32]byte)
+
+	copy(privateKey[:32], seed)
+
+	h := sha512.New()
+	h.Write(privateKey[:32])
+	digest := h.Sum(nil)
+
+	digest[0] &= 248
+	digest[31] &= 127
+	digest[31] |= 64
+
+	var A edwards25519.ExtendedGroupElement
+	var hBytes [32]byte
+	copy(hBytes[:], digest)
+	edwards25519.GeScalarMultBase(&A, &hBytes)
+	A.ToBytes(publicKey)
+
+	copy(privateKey[32:], publicKey[:])
+	return
+}
+
 // GenerateKey generates a public/private key pair using randomness from rand.
 func GenerateKey(rand io.Reader, h hash.Hash) (publicKey *[PublicKeySize]byte, privateKey *[PrivateKeySize]byte, err error) {
 	privateKey = new([64]byte)
