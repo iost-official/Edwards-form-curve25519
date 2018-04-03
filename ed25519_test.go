@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/rand"
+	"crypto/sha512"
 	"encoding/hex"
 	"io"
 	"os"
@@ -28,7 +29,7 @@ func (zeroReader) Read(buf []byte) (int, error) {
 }
 
 func TestUnmarshalMarshal(t *testing.T) {
-	pub, _, _ := GenerateKey(rand.Reader)
+	pub, _, _ := GenerateKey(rand.Reader, sha512.New())
 
 	var A edwards25519.ExtendedGroupElement
 	if !A.FromBytes(pub) {
@@ -45,16 +46,16 @@ func TestUnmarshalMarshal(t *testing.T) {
 
 func TestSignVerify(t *testing.T) {
 	var zero zeroReader
-	public, private, _ := GenerateKey(zero)
+	public, private, _ := GenerateKey(zero, sha512.New())
 
 	message := []byte("test message")
-	sig := Sign(private, message)
-	if !Verify(public, message, sig) {
+	sig := Sign(private, message, sha512.New())
+	if !Verify(public, message, sig, sha512.New()) {
 		t.Errorf("valid signature rejected")
 	}
 
 	wrongMessage := []byte("wrong message")
-	if Verify(public, wrongMessage, sig) {
+	if Verify(public, wrongMessage, sig, sha512.New()) {
 		t.Errorf("signature of different message accepted")
 	}
 }
@@ -110,14 +111,14 @@ func TestGolden(t *testing.T) {
 		copy(priv[:], privBytes)
 		copy(priv[32:], pubKeyBytes)
 
-		sig2 := Sign(&priv, msg)
+		sig2 := Sign(&priv, msg, sha512.New())
 		if !bytes.Equal(sig, sig2[:]) {
 			t.Errorf("different signature result on line %d: %x vs %x", lineNo, sig, sig2)
 		}
 
 		var pubKey [PublicKeySize]byte
 		copy(pubKey[:], pubKeyBytes)
-		if !Verify(&pubKey, msg, sig2) {
+		if !Verify(&pubKey, msg, sig2, sha512.New()) {
 			t.Errorf("signature failed to verify on line %d", lineNo)
 		}
 	}
@@ -126,7 +127,7 @@ func TestGolden(t *testing.T) {
 func BenchmarkKeyGeneration(b *testing.B) {
 	var zero zeroReader
 	for i := 0; i < b.N; i++ {
-		if _, _, err := GenerateKey(zero); err != nil {
+		if _, _, err := GenerateKey(zero, sha512.New()); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -134,27 +135,27 @@ func BenchmarkKeyGeneration(b *testing.B) {
 
 func BenchmarkSigning(b *testing.B) {
 	var zero zeroReader
-	_, priv, err := GenerateKey(zero)
+	_, priv, err := GenerateKey(zero, sha512.New())
 	if err != nil {
 		b.Fatal(err)
 	}
 	message := []byte("Hello, world!")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Sign(priv, message)
+		Sign(priv, message, sha512.New())
 	}
 }
 
 func BenchmarkVerification(b *testing.B) {
 	var zero zeroReader
-	pub, priv, err := GenerateKey(zero)
+	pub, priv, err := GenerateKey(zero, sha512.New())
 	if err != nil {
 		b.Fatal(err)
 	}
 	message := []byte("Hello, world!")
-	signature := Sign(priv, message)
+	signature := Sign(priv, message, sha512.New())
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Verify(pub, message, signature)
+		Verify(pub, message, signature, sha512.New())
 	}
 }
