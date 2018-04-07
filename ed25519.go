@@ -14,7 +14,7 @@ import (
 	"hash"
 	"io"
 
-	"github.com/agl/ed25519/edwards25519"
+	"github.com/iost-official/ed25519/edwards25519"
 )
 
 const (
