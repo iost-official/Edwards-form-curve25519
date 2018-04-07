@@ -1,11 +1,10 @@
 package edwards25519
 
-// This test code is used to generate testvectors for  Rust curve25519-dalek.
+// This test code is used to generate testvectors
 
 import "testing"
 import "fmt"
 
-// The additive identity added to it should produce itself.
 func Test_ProjectiveGroupElement_zero(t *testing.T) {
 	var p1 ProjectiveGroupElement;
 	var b  [32]byte;
@@ -147,22 +146,4 @@ func Test_ExtendedGroupElement_sub_precomputed(t *testing.T) {
 	fmt.Println("Test_ExtendedGroupElement_sub_precomputed")
 	fmt.Println(p3)
 	fmt.Println(p4)
-}
-
-func Test_selectPoint_27_negative3(t *testing.T) {
-	var p1 PreComputedGroupElement;
-
-	selectPoint(&p1, 27, -3)
-
-	fmt.Println("Test_selectPoint_27_negative3")
-	fmt.Println(p1)
-}
-
-func Test_selectPoint_29_negative8(t *testing.T) {
-	var p1 PreComputedGroupElement;
-
-	selectPoint(&p1, 29, -8)
-
-	fmt.Println("Test_selectPoint_29_negative8")
-	fmt.Println(p1)
 }
